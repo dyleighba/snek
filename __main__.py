@@ -3,6 +3,7 @@ from random import randint
 import sys
 from math import floor, log, sqrt
 from time import time
+from atlas_points import atlas_points
 
 grid_block_pix_size = 16
 grid_width = 24
@@ -14,7 +15,7 @@ color_bg_secondary = (80, 80, 80)
 color_goal = (200, 200, 200)
 color_snake_head = (200, 100, 100)
 color_snake_body = (100, 200, 100)
-color_text = (150, 150, 150)
+color_text = (140, 140, 140)
 color_text_bad = (255, 80, 80)
 goal_worth = 100
 goal_timer = 7.5
@@ -22,15 +23,22 @@ goal_timer = 7.5
 score = 0
 game_speed = game_speed_start
 
+pygame.mixer.pre_init(44100, -16, 2, 2048)
+pygame.mixer.init()
 pygame.init()
 clock = pygame.time.Clock()
 window_size = window_width, window_height = (grid_width * grid_block_pix_size,
                                              grid_height * grid_block_pix_size)
+pygame.mixer.music.load("bg.ogg")
+sound_collect = pygame.mixer.Sound("collect.ogg")
+sound_death = pygame.mixer.Sound("death.ogg")
 
 
 scr = pygame.display.set_mode(window_size)
 atlas = pygame.image.load("atlas.png")
 
+
+text_char_size = [3, 5]
 
 def render_text(text, color=color_text):
     text = text.upper()
@@ -72,19 +80,34 @@ def draw_grid():
 
 
 def draw_score():
-    surf = render_text("Score: %04d" % score)
+    surf = render_text("%05d" % score)
     x = 1 * grid_block_pix_size
     y = ((grid_height - 3) * grid_block_pix_size) - (grid_block_pix_size/2)
     surf = pygame.transform.scale(surf, (floor((surf.get_width()*grid_block_pix_size)/2), floor((surf.get_height()*grid_block_pix_size)/2)))
     scr.blit(surf, (x, y))
 
 
+def draw_snake_setup():
+    global snake_pattern
+    
+
+    ake_color = color_snake_body
+    color_diff = (6 * (len(snake_parts) - i))
+    fake_color = (max(0, fake_color[0] - color_diff),
+                  max(0, fake_color[1] - color_diff), max(0, fake_color[2] - color_diff))
+    x = snek_part[0]
+    y = snek_part[1]
+    if i == (len(snake_parts) - 1):
+        surf_pa[x, y] = color_snake_head
+    else:
+        surf_pa[x, y] = fake_color
+
 def draw_snake():
     surf = pygame.Surface((grid_width, grid_height), pygame.SRCALPHA)
     surf_pa = pygame.PixelArray(surf)
     for i, snek_part in enumerate(snake_parts):
         fake_color = color_snake_body
-        color_diff = (5 * (len(snake_parts)-i))
+        color_diff = (6 * (len(snake_parts)-i))
         fake_color = (max(0, fake_color[0]-color_diff),
                       max(0, fake_color[1]-color_diff), max(0, fake_color[2]-color_diff))
         x = snek_part[0]
@@ -126,6 +149,7 @@ def draw_fail():
 def snake_logic():
     global score
     global fail
+    global fail_first
     # Used to freeze the game after game over.
     if fail:
         return
@@ -157,6 +181,7 @@ def snake_logic():
         if i is not (len(snake_parts) - 1):
             if part == snake_parts[-1]:
                 fail = True
+                fail_first = True
 
 
 def setup_goal():
@@ -166,6 +191,7 @@ def setup_goal():
         goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
         if goal_location not in snake_parts: break
     goal_last = time()
+
 
 def goal_logic():
     global goal_location
@@ -184,6 +210,7 @@ def goal_logic():
             goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
             if goal_location not in snake_parts: break
         goal_last = cur_time
+        sound_collect.play()
         return True
     return False
 
@@ -191,6 +218,7 @@ def goal_logic():
 def setup_game():
     global score
     global fail
+    global fail_first
     global snake_heading
     global snake_parts
     global game_speed
@@ -198,6 +226,7 @@ def setup_game():
     global goal_last
     score = 0
     fail = False
+    fail_first = False
     snake_heading = ["RIGHT"]
     snake_parts = [
         [floor(grid_width / 2), floor(grid_height / 2)],
@@ -208,10 +237,22 @@ def setup_game():
         goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
         if goal_location not in snake_parts: break
     goal_last = time()
+    start_music()
+
+def start_music():
+    pygame.mixer.music.rewind()
+    pygame.mixer.music.play()
+
+
+def stop_music():
+    sound_death.play()
+    #pygame.mixer.music.fadeout(250)
+    pygame.mixer.music.stop()
 
 
 def handle_events():
     global fail
+    global fail_first
     clock.tick(game_speed)
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -229,6 +270,7 @@ def handle_events():
                     snake_heading.append("DOWN")
             if event.key == pygame.K_END:
                 fail = True
+                fail_first = True
             if event.key == pygame.K_r:
                 setup_game()
         elif event.type == pygame.QUIT:
@@ -269,6 +311,9 @@ while True:
     draw_vignette()
     draw_snake()
     draw_goal()
+    if fail_first:
+        stop_music()
+        fail_first = False
     if fail:
         draw_fail()
         draw_score()
