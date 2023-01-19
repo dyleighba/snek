@@ -124,7 +124,7 @@ def draw_fail():
 
 def start_music():
     pygame.mixer.music.rewind()
-    pygame.mixer.music.play()
+    pygame.mixer.music.play(loops=-1)
 
 
 def stop_music():
