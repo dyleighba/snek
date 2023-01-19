@@ -19,9 +19,6 @@ color_text_bad = (255, 80, 80)
 goal_worth = 100
 goal_timer = 7.5
 
-score = 0
-game_speed = game_speed_start
-
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.mixer.init()
 pygame.init()
@@ -33,7 +30,7 @@ sound_collect = pygame.mixer.Sound("resources/collect.ogg")
 sound_death = pygame.mixer.Sound("resources/death.ogg")
 
 scr = pygame.display.set_mode(window_size)
-atlas = pygame.image.load("resources/font.png")
+font_atlas = pygame.image.load("resources/font.png")
 
 text_char_size = [3, 5]
 
@@ -42,18 +39,11 @@ def render_text(text, color=color_text):
     text = text.upper()
     surf = pygame.Surface((4 * len(text), 5), flags=pygame.SRCALPHA)
     for i, c in enumerate(text):
-        surf.blit(atlas, (4 * i, 0), pygame.Rect(4 * ord(c), 0, 4, 5))
+        surf.blit(font_atlas, (4 * i, 0), pygame.Rect(4 * ord(c), 0, 4, 5))
     surf_pa = pygame.PixelArray(surf)
     surf_pa.replace((0, 0, 0), color)
     del surf_pa
     return surf
-
-
-def render_text_atlas():
-    text = ""
-    for i in range(256):
-        text = text + chr(i)
-    pygame.image.save(render_text(text), "atlas_gen.png")
 
 
 def draw_bg():
@@ -78,7 +68,7 @@ def draw_grid():
     scr.blit(grid_surf, (0, 0))
 
 
-def draw_score():
+def draw_score(score):
     surf = render_text("%05d" % score)
     x = 1 * grid_block_pix_size
     y = ((grid_height - 3) * grid_block_pix_size) - (grid_block_pix_size / 2)
@@ -87,22 +77,7 @@ def draw_score():
     scr.blit(surf, (x, y))
 
 
-def draw_snake_setup():
-    global snake_pattern
-
-    ake_color = color_snake_body
-    color_diff = (6 * (len(snake_parts) - i))
-    fake_color = (max(0, fake_color[0] - color_diff),
-                  max(0, fake_color[1] - color_diff), max(0, fake_color[2] - color_diff))
-    x = snek_part[0]
-    y = snek_part[1]
-    if i == (len(snake_parts) - 1):
-        surf_pa[x, y] = color_snake_head
-    else:
-        surf_pa[x, y] = fake_color
-
-
-def draw_snake():
+def draw_snake(snake_parts):
     surf = pygame.Surface((grid_width, grid_height), pygame.SRCALPHA)
     surf_pa = pygame.PixelArray(surf)
     for i, snek_part in enumerate(snake_parts):
@@ -120,7 +95,7 @@ def draw_snake():
     scr.blit(pygame.transform.scale(surf, (window_width, window_height)), (0, 0))
 
 
-def draw_goal():
+def draw_goal(goal_location):
     x = goal_location[0] * grid_block_pix_size
     y = goal_location[1] * grid_block_pix_size
     scr.fill((255, 255, 255), pygame.Rect(
@@ -147,100 +122,6 @@ def draw_fail():
     scr.blit(surf2, (grid_block_pix_size, grid_block_pix_size))
 
 
-def snake_logic():
-    global score
-    global fail
-    global fail_first
-    # Used to freeze the game after game over.
-    if fail:
-        return
-
-    x, y = snake_parts[len(snake_parts) - 1]
-    if snake_heading[0] == "LEFT": x -= 1
-    if snake_heading[0] == "RIGHT": x += 1
-    if snake_heading[0] == "UP": y -= 1
-    if snake_heading[0] == "DOWN": y += 1
-    if len(snake_heading) > 1:
-        snake_heading.pop(0)
-
-    if x >= grid_width:
-        x = 0
-    if x < 0:
-        x = grid_width - 1
-    if y >= grid_height:
-        y = 0
-    if y < 0:
-        y = grid_height - 1
-
-    snake_head = [x, y]
-    snake_parts.append(snake_head)
-
-    if not goal_logic():
-        snake_parts.pop(0)
-
-    for i, part in enumerate(snake_parts):
-        if i is not (len(snake_parts) - 1):
-            if part == snake_parts[-1]:
-                fail = True
-                fail_first = True
-
-
-def setup_goal():
-    global goal_location
-    global goal_last
-    while True:
-        goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
-        if goal_location not in snake_parts: break
-    goal_last = time()
-
-
-def goal_logic():
-    global goal_location
-    global goal_last
-    global game_speed
-    global score
-    if snake_parts[-1] == goal_location:
-        game_speed += game_speed_step
-        cur_time = time()
-        time_taken = ((goal_timer - min((cur_time - goal_last), goal_timer)) / goal_timer)
-        print(time_taken)
-        score_get = goal_worth * time_taken
-        print(score_get)
-        score += score_get
-        while True:
-            goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
-            if goal_location not in snake_parts: break
-        goal_last = cur_time
-        sound_collect.play()
-        return True
-    return False
-
-
-def setup_game():
-    global score
-    global fail
-    global fail_first
-    global snake_heading
-    global snake_parts
-    global game_speed
-    global goal_location
-    global goal_last
-    score = 0
-    fail = False
-    fail_first = False
-    snake_heading = ["RIGHT"]
-    snake_parts = [
-        [floor(grid_width / 2), floor(grid_height / 2)],
-        [floor(grid_width / 2), floor(grid_height / 2) - 1]
-    ]
-    game_speed = game_speed_start
-    while True:
-        goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
-        if goal_location not in snake_parts: break
-    goal_last = time()
-    start_music()
-
-
 def start_music():
     pygame.mixer.music.rewind()
     pygame.mixer.music.play()
@@ -248,36 +129,7 @@ def start_music():
 
 def stop_music():
     sound_death.play()
-    # pygame.mixer.music.fadeout(250)
     pygame.mixer.music.stop()
-
-
-def handle_events():
-    global fail
-    global fail_first
-    clock.tick(game_speed)
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                if snake_heading[len(snake_heading) - 1] != "RIGHT":
-                    snake_heading.append("LEFT")
-            if event.key == pygame.K_RIGHT:
-                if snake_heading[len(snake_heading) - 1] != "LEFT":
-                    snake_heading.append("RIGHT")
-            if event.key == pygame.K_UP:
-                if snake_heading[len(snake_heading) - 1] != "DOWN":
-                    snake_heading.append("UP")
-            if event.key == pygame.K_DOWN:
-                if snake_heading[len(snake_heading) - 1] != "UP":
-                    snake_heading.append("DOWN")
-            if event.key == pygame.K_END:
-                fail = True
-                fail_first = True
-            if event.key == pygame.K_r:
-                setup_game()
-        elif event.type == pygame.QUIT:
-            sys.exit()
-
 
 def draw_vignette():
     global vignette_surf
@@ -301,22 +153,128 @@ def draw_vignette():
     scr.blit(vignette_surf, (0, 0))
 
 
-setup_game()
+class SnakeGame:
+    score = 0
+    fail = False
+    fail_first = False
+    snake_heading = ["RIGHT"]
+    snake_parts = []
+    game_speed = game_speed_start
+    goal_location = [0, 0]
+    goal_last = 0
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.score = 0
+        self.fail = False
+        self.fail_first = False
+        self.snake_heading = ["RIGHT"]
+        self.snake_parts = [
+            [floor(grid_width / 2), floor(grid_height / 2)],
+            [floor(grid_width / 2), floor(grid_height / 2) - 1]
+        ]
+        self.game_speed = game_speed_start
+        self.place_food()
+        self.goal_last = time()
+        start_music()
+    def run_game_cycle(self):
+        global fail
+        global fail_first
+        clock.tick(self.game_speed)
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    if self.snake_heading[len(self.snake_heading) - 1] != "RIGHT":
+                        self.snake_heading.append("LEFT")
+                if event.key == pygame.K_RIGHT:
+                    if self.snake_heading[len(self.snake_heading) - 1] != "LEFT":
+                        self.snake_heading.append("RIGHT")
+                if event.key == pygame.K_UP:
+                    if self.snake_heading[len(self.snake_heading) - 1] != "DOWN":
+                        self.snake_heading.append("UP")
+                if event.key == pygame.K_DOWN:
+                    if self.snake_heading[len(self.snake_heading) - 1] != "UP":
+                        self.snake_heading.append("DOWN")
+                if event.key == pygame.K_END:
+                    self.fail = True
+                    self.fail_first = True
+                if event.key == pygame.K_r:
+                    self.reset()
+            elif event.type == pygame.QUIT:
+                sys.exit()
+        self.snake_logic()
+
+    def place_food(self):
+        while True:
+            self.goal_location = [randint(1, grid_width) - 1, randint(1, grid_height) - 1]
+            if self.goal_location not in self.snake_parts:
+                break
+        self.goal_last = time()
+
+    def goal_logic(self):
+        if self.snake_parts[-1] == self.goal_location:
+            self.game_speed += game_speed_step
+            cur_time = time()
+            time_taken = ((goal_timer - min((cur_time - self.goal_last), goal_timer)) / goal_timer)
+            score_get = goal_worth * time_taken
+            self.score += score_get
+            self.place_food()
+            self.goal_last = cur_time
+            sound_collect.play()
+            return True
+        return False
+
+    def snake_logic(self):
+        # Used to freeze the game after game over.
+        if self.fail:
+            return
+
+        x, y = self.snake_parts[len(self.snake_parts) - 1]
+        if self.snake_heading[0] == "LEFT": x -= 1
+        if self.snake_heading[0] == "RIGHT": x += 1
+        if self.snake_heading[0] == "UP": y -= 1
+        if self.snake_heading[0] == "DOWN": y += 1
+        if len(self.snake_heading) > 1:
+            self.snake_heading.pop(0)
+
+        if x >= grid_width:
+            x = 0
+        if x < 0:
+            x = grid_width - 1
+        if y >= grid_height:
+            y = 0
+        if y < 0:
+            y = grid_height - 1
+
+        snake_head = [x, y]
+        self.snake_parts.append(snake_head)
+
+        if not self.goal_logic():
+            self.snake_parts.pop(0)
+
+        for i, part in enumerate(self.snake_parts):
+            if i is not (len(self.snake_parts) - 1):
+                if part == self.snake_parts[-1]:
+                    self.fail = True
+                    self.fail_first = True
+
+
+game = SnakeGame()
 while True:
     # Logic
-    handle_events()
-    snake_logic()
-
+    game.run_game_cycle()
     # Rendering
     draw_bg()
-    draw_score()
+    draw_score(game.score)
     draw_vignette()
-    draw_snake()
-    draw_goal()
-    if fail_first:
+    draw_snake(game.snake_parts)
+    draw_goal(game.goal_location)
+    if game.fail_first:
         stop_music()
-        fail_first = False
-    if fail:
+        game.fail_first = False
+    if game.fail:
         draw_fail()
-        draw_score()
+        draw_score(game.score)
     pygame.display.flip()
