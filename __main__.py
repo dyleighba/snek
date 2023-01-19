@@ -3,7 +3,6 @@ from random import randint
 import sys
 from math import floor, log, sqrt
 from time import time
-from atlas_points import atlas_points
 
 grid_block_pix_size = 16
 grid_width = 24
@@ -29,26 +28,26 @@ pygame.init()
 clock = pygame.time.Clock()
 window_size = window_width, window_height = (grid_width * grid_block_pix_size,
                                              grid_height * grid_block_pix_size)
-pygame.mixer.music.load("bg.ogg")
-sound_collect = pygame.mixer.Sound("collect.ogg")
-sound_death = pygame.mixer.Sound("death.ogg")
-
+pygame.mixer.music.load("resources/bg.ogg")
+sound_collect = pygame.mixer.Sound("resources/collect.ogg")
+sound_death = pygame.mixer.Sound("resources/death.ogg")
 
 scr = pygame.display.set_mode(window_size)
-atlas = pygame.image.load("atlas.png")
-
+atlas = pygame.image.load("resources/font.png")
 
 text_char_size = [3, 5]
 
+
 def render_text(text, color=color_text):
     text = text.upper()
-    surf = pygame.Surface((4*len(text), 5), flags=pygame.SRCALPHA)
+    surf = pygame.Surface((4 * len(text), 5), flags=pygame.SRCALPHA)
     for i, c in enumerate(text):
-        surf.blit(atlas, (4*i, 0), pygame.Rect(4*ord(c), 0, 4, 5))
+        surf.blit(atlas, (4 * i, 0), pygame.Rect(4 * ord(c), 0, 4, 5))
     surf_pa = pygame.PixelArray(surf)
     surf_pa.replace((0, 0, 0), color)
     del surf_pa
     return surf
+
 
 def render_text_atlas():
     text = ""
@@ -82,14 +81,14 @@ def draw_grid():
 def draw_score():
     surf = render_text("%05d" % score)
     x = 1 * grid_block_pix_size
-    y = ((grid_height - 3) * grid_block_pix_size) - (grid_block_pix_size/2)
-    surf = pygame.transform.scale(surf, (floor((surf.get_width()*grid_block_pix_size)/2), floor((surf.get_height()*grid_block_pix_size)/2)))
+    y = ((grid_height - 3) * grid_block_pix_size) - (grid_block_pix_size / 2)
+    surf = pygame.transform.scale(surf, (
+    floor((surf.get_width() * grid_block_pix_size) / 2), floor((surf.get_height() * grid_block_pix_size) / 2)))
     scr.blit(surf, (x, y))
 
 
 def draw_snake_setup():
     global snake_pattern
-    
 
     ake_color = color_snake_body
     color_diff = (6 * (len(snake_parts) - i))
@@ -102,14 +101,15 @@ def draw_snake_setup():
     else:
         surf_pa[x, y] = fake_color
 
+
 def draw_snake():
     surf = pygame.Surface((grid_width, grid_height), pygame.SRCALPHA)
     surf_pa = pygame.PixelArray(surf)
     for i, snek_part in enumerate(snake_parts):
         fake_color = color_snake_body
-        color_diff = (6 * (len(snake_parts)-i))
-        fake_color = (max(0, fake_color[0]-color_diff),
-                      max(0, fake_color[1]-color_diff), max(0, fake_color[2]-color_diff))
+        color_diff = (6 * (len(snake_parts) - i))
+        fake_color = (max(0, fake_color[0] - color_diff),
+                      max(0, fake_color[1] - color_diff), max(0, fake_color[2] - color_diff))
         x = snek_part[0]
         y = snek_part[1]
         if i == (len(snake_parts) - 1):
@@ -131,15 +131,16 @@ def draw_goal():
 def draw_fail():
     fail_text = "FAIL!"
     surf = render_text(fail_text, color=color_text_bad)
-    surf = pygame.transform.scale(surf, ((surf.get_width()*grid_block_pix_size), floor(surf.get_height()*grid_block_pix_size)))
+    surf = pygame.transform.scale(surf, (
+    (surf.get_width() * grid_block_pix_size), floor(surf.get_height() * grid_block_pix_size)))
 
     box_surf = pygame.Surface(window_size)
     box_surf.set_alpha(128)
     box_surf.fill(color_bg_secondary)
     scr.blit(box_surf, (0, 0))
 
-    x = (floor(grid_width/2) - floor(len(fail_text)*2)) * grid_block_pix_size
-    y = (floor(grid_height/2) - 3) * grid_block_pix_size
+    x = (floor(grid_width / 2) - floor(len(fail_text) * 2)) * grid_block_pix_size
+    y = (floor(grid_height / 2) - 3) * grid_block_pix_size
     scr.blit(surf, (x, y))
 
     surf2 = render_text("R TO REPLAY", color=color_text_bad)
@@ -201,9 +202,9 @@ def goal_logic():
     if snake_parts[-1] == goal_location:
         game_speed += game_speed_step
         cur_time = time()
-        time_taken = ((goal_timer-min((cur_time - goal_last), goal_timer))/goal_timer)
+        time_taken = ((goal_timer - min((cur_time - goal_last), goal_timer)) / goal_timer)
         print(time_taken)
-        score_get = goal_worth*time_taken
+        score_get = goal_worth * time_taken
         print(score_get)
         score += score_get
         while True:
@@ -239,6 +240,7 @@ def setup_game():
     goal_last = time()
     start_music()
 
+
 def start_music():
     pygame.mixer.music.rewind()
     pygame.mixer.music.play()
@@ -246,7 +248,7 @@ def start_music():
 
 def stop_music():
     sound_death.play()
-    #pygame.mixer.music.fadeout(250)
+    # pygame.mixer.music.fadeout(250)
     pygame.mixer.music.stop()
 
 
